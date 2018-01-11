@@ -1366,8 +1366,21 @@ PATH is value."
       node-name))
    (t nil)))
 
+
+(defun neo-buffer--collapsed-node-name (node)
+  (if (not (file-directory-p node))
+      node
+    (let ((node-contents (directory-files node nil "^[^.]\\|\\(\\.[^.]\\).*")))
+      (if (/= 1 (length node-contents))
+          node
+        (let ((new-node (concat (file-name-as-directory node) (car node-contents))))
+          (if (file-directory-p new-node)
+              (neo-buffer--collapsed-node-name new-node)
+            node))))))
+
 (defun neo-buffer--insert-dir-entry (node depth expanded)
-  (let ((node-short-name (neo-path--file-short-name node)))
+  ;;(neo-buffer--collapsed-node-name
+  (let ((node-short-name (neo-buffer--collapsed-node-name (neo-path--file-short-name node))))
     (insert-char ?\s (* (- depth 1) 2)) ; indent
     (when (memq 'char neo-vc-integration)
       (insert-char ?\s 2))
@@ -1376,7 +1389,7 @@ PATH is value."
     (insert-button (concat node-short-name "/")
                    'follow-link t
                    'face neo-dir-link-face
-                   'neo-full-path node
+                   'neo-full-path (concat (file-name-directory node) node-short-name)
                    'keymap neotree-dir-button-keymap
                    'help-echo (neo-buffer--help-echo-message node-short-name))
     (neo-buffer--node-list-set nil node)
